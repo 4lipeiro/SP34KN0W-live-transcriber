@@ -32,7 +32,7 @@ There are many ways to contribute to SP34KN0W:
 
 2. **Clone Your Fork**:
    ```powershell
-   git clone https://github.com/your-username/SP34KN0W-live-transcriber.git
+   git clone https://github.com/4lipeiro/SP34KN0W-live-transcriber.git
    cd SP34KN0W-live-transcriber
    ```
 

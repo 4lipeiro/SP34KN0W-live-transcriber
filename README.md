@@ -1,7 +1,5 @@
 # SP34KN0W Live Transcriber
 
-![SP34KN0W Logo](https://via.placeholder.com/150x150.png?text=SP34KN0W)
-
 ## 🎤 Real-time Speech Transcription Tool
 
 SP34KN0W is a powerful, command-line based live transcription tool that converts spoken words into text in real-time. Whether you're in a meeting, lecture, or any situation where you need accurate transcription, SP34KN0W has you covered.
@@ -240,17 +238,6 @@ For assistance, please:
 1. Check the [documentation](docs/)
 2. Look through [existing issues](https://github.com/yourusername/SP34KN0W-live-transcriber/issues)
 3. Create a new issue if needed
-
-## 🔮 Future Development
-
-Planned enhancements include:
-
-- Graphical user interface
-- Enhanced translation capabilities
-- Offline mode
-- Speaker diarization (identifying different speakers)
-- Custom vocabulary training
-- Mobile support
 
 ## 📊 Project Status
 
