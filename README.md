@@ -1,5 +1,17 @@
 # SP34KN0W Live Transcriber v3.0
 
+## ⚠️ IMPORTANT BETA NOTICE
+
+**This v3.0 release is currently in BETA and has several known issues:**
+
+- The application may not function properly in its current state
+- Linux users must run with `python3 main.py 2> /dev/null` to bypass ALSA/JACK errors
+- Stability issues are present as this is an experimental build
+- Using `--debug` parameter breaks the text interface due to logger conflicts
+- Keyboard shortcuts (Ctrl+S to pause, Ctrl+R to resume) are currently non-functional
+
+**RECOMMENDATION:** For a stable experience, users should use v2.0-stable. Linux users should be aware of these limitations if testing this beta version.
+
 > **Version Compatibility Notice:**
 > - For Windows users: Please use v2.0-stable
 > - v3.0 is currently a beta version available for Linux systems only
