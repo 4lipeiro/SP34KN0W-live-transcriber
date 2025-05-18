@@ -1,32 +1,52 @@
 #!/usr/bin/env python3
-# filepath: main.py
 import argparse
 import asyncio
 import os
 import signal
 import sys
+import logging
 from datetime import datetime
+from dotenv import load_dotenv
 from src.transcriber import DeepgramTranscriber
 from src.ui.terminal_ui import TerminalUI
 from config import Config
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%H:%M:%S'
+)
+logger = logging.getLogger('d33p-sp34k')
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="D33P-SP34K Transcriber - Real-time transcription tool")
     parser.add_argument("--language", "-l", default="italian", help="Language for transcription (default: italian)")
+    parser.add_argument("--translate", "-t", action="store_true", help="Enable translation to English")
     parser.add_argument("--list-languages", action="store_true", help="List available languages")
     parser.add_argument("--list-sessions", action="store_true", help="List saved sessions")
     parser.add_argument("--session", "-s", help="Name for this session (default: timestamp)")
+    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging")
     return parser.parse_args()
 
 async def main():
     args = parse_arguments()
     config = Config()
     
+    # Set debug logging if requested
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.debug("Debug logging enabled")
+    
     # Handle utility commands
     if args.list_languages:
         print("Available languages:")
         for code, name in config.SUPPORTED_LANGUAGES.items():
-            print(f"  - {name} ({code})")
+            model = config.LANGUAGE_MODELS.get(code, config.DEFAULT_MODEL)
+            print(f"  - {name} ({code}) - Model: {model}")
         return
         
     if args.list_sessions:
@@ -66,12 +86,18 @@ async def main():
         ui.display_error(f"Language '{language}' not recognized. Using default (Italian).")
         language_code = "it"
     
+    # Get appropriate model for language
+    model = config.LANGUAGE_MODELS.get(language_code, config.DEFAULT_MODEL)
+    logger.info(f"Using {model} model for {config.SUPPORTED_LANGUAGES[language_code]}")
+    
     # Initialize transcriber
     transcriber = DeepgramTranscriber(
         api_key=os.getenv("DEEPGRAM_API_KEY"),
         language=language_code,
         ui=ui,
-        session_name=session_name
+        session_name=session_name,
+        model=model,
+        translate=args.translate
     )
     
     # Set up signal handlers
@@ -82,8 +108,11 @@ async def main():
     signal.signal(signal.SIGINT, signal_handler)
     
     # Start UI
-    ui.display_welcome(language_code)
+    ui.display_welcome(language_code, args.translate)
     ui.display_message(f"Starting transcription session: {session_name}")
+    ui.display_message(f"Using model: {model}")
+    if args.translate:
+        ui.display_message("Translation to English: ENABLED")
     ui.display_message("Press Ctrl+C to end the session\n")
     
     # Start transcription
