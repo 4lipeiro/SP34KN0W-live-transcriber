@@ -5,18 +5,19 @@ import os
 import signal
 import sys
 import logging
-import keyboard
 from datetime import datetime
 from src.transcriber import DeepgramTranscriber, get_available_microphones
 from src.ui.terminal_ui import TerminalUI, BANNER
 from config import Config
 from dotenv import load_dotenv
+import threading
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Set up logging
 logging.basicConfig(
+    filename='sp34kn0w.log',  # Log to file, not terminal
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%H:%M:%S'
@@ -92,7 +93,7 @@ async def main():
         session_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     
     # Initialize components
-    ui = TerminalUI()
+    ui = TerminalUI(debug_mode=args.debug)
     ui.set_show_timestamps(not args.no_timestamp)
     
     # Language setup
@@ -120,8 +121,8 @@ async def main():
         except ValueError:
             mic_device = args.mic  # Use as a name
     
-    # Display welcome header
-    ui.display_welcome(language_code, mic_device=None, translate=args.translate)
+    # Display welcome header (print is OK here, before curses)
+    ui.display_welcome(language_code, mic_device=mic_device, translate=args.translate)
     ui.display_message(f"Starting transcription session: {session_name}")
     ui.display_message(f"Using model: {model}")
     if args.translate:
@@ -147,32 +148,26 @@ async def main():
             print("Transcription cancelled by user.")
             return
     
-    # Start the UI
-    if ui.stdscr:
-        ui.stop()  # Stop any existing UI
-    ui.start()  # Start proper UI now
-    
-    # Setup keyboard handlers for global pause/resume
-    keyboard.add_hotkey('ctrl+s', lambda: asyncio.create_task(asyncio.to_thread(transcriber.pause)))
-    keyboard.add_hotkey('ctrl+r', lambda: asyncio.create_task(asyncio.to_thread(transcriber.resume)))
-    
-   # Set up signal handlers
+
+    # Start the UI in a separate thread
+    ui_thread = threading.Thread(target=ui.start, args=(transcriber,), daemon=True)
+    ui_thread.start()
+
+    # Set up signal handler for Ctrl+C
     def signal_handler(sig, frame):
         ui.display_message("\nShutting down transcription...")
         asyncio.create_task(transcriber.stop())
-
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     ui.display_message("Press Ctrl+C to end the session, Ctrl+S to pause, Ctrl+R to resume\n")
-    
-    # Start transcription
+
+    # Start transcription (in main thread)
     await transcriber.start()
-    
-    # Wait until transcription is stopped
     await transcriber.wait_for_completion()
-    
+
     ui.display_message(f"\nSession saved to: sessions/{session_name}.md")
     ui.display_message("Thank you for using SP34KN0W Live Transcriber!")
+
 
 if __name__ == "__main__":
     if not os.getenv("DEEPGRAM_API_KEY"):
@@ -180,13 +175,7 @@ if __name__ == "__main__":
         print("Please set your Deepgram API key with:")
         print("  export DEEPGRAM_API_KEY=your_api_key_here")
         sys.exit(1)
-        
-    # Add the keyboard library
     try:
-        import keyboard
-    except ImportError:
-        print("The 'keyboard' library is required. Please install it with:")
-        print("  pip install keyboard")
-        sys.exit(1)
-        
-    asyncio.run(main())
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nTranscription stopped by user. Goodbye!")

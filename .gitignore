@@ -2,6 +2,7 @@
 dev/
 api-docs/
 sessions/*
+TODO.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
