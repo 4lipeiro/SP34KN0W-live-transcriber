@@ -1,6 +1,8 @@
 # SP34KN0W Live Transcriber v3.0
 
-![SP34KN0W Logo](https://via.placeholder.com/150x150.png?text=SP34KN0W)
+> **Version Compatibility Notice:**
+> - For Windows users: Please use v2.0-stable
+> - v3.0 is currently a beta version available for Linux systems only
 
 ## 🎤 Real-time Speech Transcription Tool
 
