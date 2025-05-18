@@ -5,11 +5,12 @@ import os
 import signal
 import sys
 import logging
+import keyboard
 from datetime import datetime
-from dotenv import load_dotenv
-from src.transcriber import DeepgramTranscriber
-from src.ui.terminal_ui import TerminalUI
+from src.transcriber import DeepgramTranscriber, get_available_microphones
+from src.ui.terminal_ui import TerminalUI, BANNER
 from config import Config
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,16 +21,21 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%H:%M:%S'
 )
-logger = logging.getLogger('d33p-sp34k')
+logger = logging.getLogger('sp34kn0w')
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="D33P-SP34K Transcriber - Real-time transcription tool")
+    parser = argparse.ArgumentParser(description="SP34KN0W Live Transcriber - Real-time transcription tool")
     parser.add_argument("--language", "-l", default="italian", help="Language for transcription (default: italian)")
-    parser.add_argument("--translate", "-t", action="store_true", help="Enable translation to English")
     parser.add_argument("--list-languages", action="store_true", help="List available languages")
     parser.add_argument("--list-sessions", action="store_true", help="List saved sessions")
+    parser.add_argument("--list-mics", action="store_true", help="List available microphone devices")
     parser.add_argument("--session", "-s", help="Name for this session (default: timestamp)")
+    parser.add_argument("--translate", "-t", action="store_true", help="Enable translation to English")
     parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output of transcript data")
+    parser.add_argument("--mic", "-m", help="Microphone device name or index to use")
+    parser.add_argument("--no-timestamp", action="store_true", help="Hide timestamps in transcript")
+    parser.add_argument("--no-confirmation", action="store_true", help="Skip initial confirmation prompt")
     return parser.parse_args()
 
 async def main():
@@ -37,12 +43,16 @@ async def main():
     config = Config()
     
     # Set debug logging if requested
-    if args.debug:
+    if args.debug or args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-        logger.debug("Debug logging enabled")
+        if args.verbose:
+            logger.debug("Verbose mode enabled - showing all transcript data")
+        else:
+            logger.debug("Debug logging enabled")
     
     # Handle utility commands
     if args.list_languages:
+        print(BANNER)
         print("Available languages:")
         for code, name in config.SUPPORTED_LANGUAGES.items():
             model = config.LANGUAGE_MODELS.get(code, config.DEFAULT_MODEL)
@@ -50,6 +60,7 @@ async def main():
         return
         
     if args.list_sessions:
+        print(BANNER)
         sessions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
         if not os.path.exists(sessions_dir):
             print("No sessions found.")
@@ -64,6 +75,15 @@ async def main():
         for session in sorted(sessions):
             print(f"  - {session}")
         return
+            
+    if args.list_mics:
+        print(BANNER)
+        devices = get_available_microphones()
+        print("Available microphone devices:")
+        for device in devices:
+            default_mark = " (Default)" if device['default'] else ""
+            print(f"  {device['index']}: {device['name']}{default_mark} - {device['channels']} channels")
+        return
 
     # Set up session name
     if args.session:
@@ -73,6 +93,7 @@ async def main():
     
     # Initialize components
     ui = TerminalUI()
+    ui.set_show_timestamps(not args.no_timestamp)
     
     # Language setup
     language = args.language.lower()
@@ -90,6 +111,22 @@ async def main():
     model = config.LANGUAGE_MODELS.get(language_code, config.DEFAULT_MODEL)
     logger.info(f"Using {model} model for {config.SUPPORTED_LANGUAGES[language_code]}")
     
+    # Process microphone selection
+    mic_device = None
+    if args.mic:
+        # Try to convert to integer for index-based selection
+        try:
+            mic_device = int(args.mic)
+        except ValueError:
+            mic_device = args.mic  # Use as a name
+    
+    # Display welcome header
+    ui.display_welcome(language_code, mic_device=None, translate=args.translate)
+    ui.display_message(f"Starting transcription session: {session_name}")
+    ui.display_message(f"Using model: {model}")
+    if args.translate:
+        ui.display_message("Translation to English: ENABLED")
+    
     # Initialize transcriber
     transcriber = DeepgramTranscriber(
         api_key=os.getenv("DEEPGRAM_API_KEY"),
@@ -97,23 +134,36 @@ async def main():
         ui=ui,
         session_name=session_name,
         model=model,
-        translate=args.translate
+        translate=args.translate,
+        mic_device=mic_device
     )
     
-    # Set up signal handlers
+    # CHECK AUDIO LEVELS BEFORE CONFIRMATION
+    audio_check = await transcriber.check_microphone()
+    
+    # Get user confirmation after seeing mic levels
+    if not args.no_confirmation:
+        if not ui.request_confirmation(f"Ready to start transcription with {audio_check['level']:.1f}% mic level. Press 'y' to begin or 'n' to cancel: "):
+            print("Transcription cancelled by user.")
+            return
+    
+    # Start the UI
+    if ui.stdscr:
+        ui.stop()  # Stop any existing UI
+    ui.start()  # Start proper UI now
+    
+    # Setup keyboard handlers for global pause/resume
+    keyboard.add_hotkey('ctrl+s', lambda: asyncio.create_task(asyncio.to_thread(transcriber.pause)))
+    keyboard.add_hotkey('ctrl+r', lambda: asyncio.create_task(asyncio.to_thread(transcriber.resume)))
+    
+   # Set up signal handlers
     def signal_handler(sig, frame):
         ui.display_message("\nShutting down transcription...")
         asyncio.create_task(transcriber.stop())
-    
+
     signal.signal(signal.SIGINT, signal_handler)
     
-    # Start UI
-    ui.display_welcome(language_code, args.translate)
-    ui.display_message(f"Starting transcription session: {session_name}")
-    ui.display_message(f"Using model: {model}")
-    if args.translate:
-        ui.display_message("Translation to English: ENABLED")
-    ui.display_message("Press Ctrl+C to end the session\n")
+    ui.display_message("Press Ctrl+C to end the session, Ctrl+S to pause, Ctrl+R to resume\n")
     
     # Start transcription
     await transcriber.start()
@@ -122,13 +172,21 @@ async def main():
     await transcriber.wait_for_completion()
     
     ui.display_message(f"\nSession saved to: sessions/{session_name}.md")
-    ui.display_message("Thank you for using D33P-SP34K Transcriber!")
+    ui.display_message("Thank you for using SP34KN0W Live Transcriber!")
 
 if __name__ == "__main__":
     if not os.getenv("DEEPGRAM_API_KEY"):
         print("Error: DEEPGRAM_API_KEY environment variable not set")
         print("Please set your Deepgram API key with:")
         print("  export DEEPGRAM_API_KEY=your_api_key_here")
+        sys.exit(1)
+        
+    # Add the keyboard library
+    try:
+        import keyboard
+    except ImportError:
+        print("The 'keyboard' library is required. Please install it with:")
+        print("  pip install keyboard")
         sys.exit(1)
         
     asyncio.run(main())

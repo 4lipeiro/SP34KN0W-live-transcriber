@@ -5,6 +5,7 @@ import time
 import logging
 import pyaudio
 import numpy as np
+import keyboard
 from datetime import datetime
 from deepgram import (
     DeepgramClient,
@@ -45,6 +46,7 @@ def get_available_microphones():
     p.terminate()
     return device_list
 
+      
 class DeepgramTranscriber:
     def __init__(self, api_key, language="it", ui=None, session_name=None, model="nova-2", translate=False, mic_device=None):
         self.api_key = api_key
@@ -95,11 +97,17 @@ class DeepgramTranscriber:
         self.audio_cursor = 0
         self.latency_measurements = []
         
+        # Add pause status
+        self.paused = False
+        self.pause_event = asyncio.Event()
+        self.pause_event.set()  # Not paused initially
+        
         # Create sessions directory
         self.sessions_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sessions")
         ensure_dir_exists(self.sessions_dir)
         
     async def start(self):
+
         """Start the transcription process"""
         self.running = True
         self.start_time = time.time()
@@ -138,11 +146,9 @@ class DeepgramTranscriber:
             if asyncio.iscoroutine(result):
                 await result
             
-            # Check audio levels to ensure microphone is working
-            await self._check_audio_levels()
-            
-            # Simulate a transcript to test the display (optional)
-            # await self._simulate_test_transcript()
+            # Note: Audio level check is now done BEFORE this method is called
+            # Set up keyboard handlers for pause/resume
+            self._setup_keyboard_handlers()
             
             # Choose the appropriate microphone streaming method
             if self.mic_device_index is not None:
@@ -156,7 +162,11 @@ class DeepgramTranscriber:
                 self.ui.display_error(f"Failed to start transcription: {str(e)}")
             self.running = False
             self.completion_event.set()
-    
+        
+        # Clean up UI when done
+        if self.ui:
+            self.ui.stop()
+        
     async def stop(self):
         """Stop the transcription process"""
         self.running = False
@@ -179,6 +189,37 @@ class DeepgramTranscriber:
     async def wait_for_completion(self):
         """Wait until the transcription is completed"""
         await self.completion_event.wait()
+    
+    def _setup_keyboard_handlers(self):
+        """Set up keyboard handlers for pause/resume"""
+        # Register Ctrl+S for pause and Ctrl+R for resume
+        keyboard.add_hotkey('ctrl+s', self.pause)
+        keyboard.add_hotkey('ctrl+r', self.resume)
+    
+    def pause(self):
+        """Pause the transcription"""
+        if not self.paused and self.running:
+            logger.info("Transcription paused")
+            self.paused = True
+            self.pause_event.clear()
+            
+            if self.ui:
+                self.ui.set_paused(True)
+                self.ui.display_message("Transcription paused. Press Ctrl+R to resume.")
+            
+            # Save current progress to file
+            asyncio.create_task(self._save_transcript(append_mode=True))
+    
+    def resume(self):
+        """Resume the transcription"""
+        if self.paused and self.running:
+            logger.info("Transcription resumed")
+            self.paused = False
+            self.pause_event.set()
+            
+            if self.ui:
+                self.ui.set_paused(False)
+                self.ui.display_message("Transcription resumed")
     
     async def _stream_microphone_deepgram(self):
         """Stream microphone audio using Deepgram's Microphone class"""
@@ -203,6 +244,23 @@ class DeepgramTranscriber:
             
             # Keep running until stopped
             while self.running:
+                # Check pause state
+                if self.paused:
+                    # If paused, temporarily stop the microphone
+                    microphone.finish()
+                    
+                    # Wait until resumed
+                    await self.pause_event.wait()
+                    
+                    # Resume microphone if we're still running
+                    if self.running:
+                        microphone = Microphone(
+                            push_callback=self.connection.send,
+                            rate=self.RATE,
+                            channels=self.CHANNELS
+                        )
+                        microphone.start()
+                
                 await asyncio.sleep(0.1)
                 self.audio_cursor += chunk_duration
                 
@@ -240,6 +298,11 @@ class DeepgramTranscriber:
             
             # Stream audio data
             while self.running:
+                # Check if paused - if so, wait until resumed
+                if self.paused:
+                    await asyncio.sleep(0.1)  # Check every 100ms while paused
+                    continue
+                
                 data = stream.read(1024, exception_on_overflow=False)
                 if self.connection and data and self.running:
                     # Don't await the send() method - it's not a coroutine
@@ -367,7 +430,7 @@ class DeepgramTranscriber:
                 # Skip empty transcripts
                 if not text or not text.strip():
                     return
-                    
+                
                 # Get timing information - convert microseconds to seconds
                 start_time = result.start / 1000000 if result.start > 1000 else result.start
                 duration = result.duration / 1000000 if result.duration > 1000 else result.duration
@@ -413,10 +476,7 @@ class DeepgramTranscriber:
                         
                     self.transcript_data.append(entry)
                     
-                    if self.ui:
-                        self.ui.display_transcript(timestamp_str, text, is_final, translation)
-                elif self.ui:
-                    # Show interim results but don't store them
+                if self.ui:
                     self.ui.display_transcript(timestamp_str, text, is_final, translation)
                     
         except Exception as e:
@@ -506,7 +566,7 @@ class DeepgramTranscriber:
         if self.ui:
             self.ui.display_message(f"Latency statistics - Avg: {avg_latency:.3f}s, Min: {min_latency:.3f}s, Max: {max_latency:.3f}s")
     
-    async def _save_transcript(self):
+    async def _save_transcript(self, append_mode=False):
         """Save the transcript to a markdown file"""
         try:
             # Log the transcript data for debugging
@@ -520,39 +580,113 @@ class DeepgramTranscriber:
             ensure_dir_exists(self.sessions_dir)
             
             filename = os.path.join(self.sessions_dir, f"{self.session_name}.md")
-            logger.info(f"Saving transcript to {filename}")
+            mode = 'a' if append_mode else 'w'
+            logger.info(f"Saving transcript to {filename} (mode: {mode})")
             
-            with open(filename, 'w', encoding='utf-8') as f:
-                # Write header
-                f.write(f"# Transcription Session: {self.session_name}\n\n")
-                f.write(f"- **Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write(f"- **Language:** {self.language}\n")
-                f.write(f"- **Model:** {self.model}\n")
-                f.write(f"- **Microphone:** {self.mic_device_name}\n")
-                f.write(f"- **Translation:** {'Enabled' if self.translate else 'Disabled'}\n\n")
-                
-                # Write latency statistics
-                if self.latency_measurements:
-                    avg_latency = sum(self.latency_measurements) / len(self.latency_measurements)
-                    min_latency = min(self.latency_measurements)
-                    max_latency = max(self.latency_measurements)
-                    f.write(f"## Latency Statistics\n\n")
-                    f.write(f"- **Average:** {avg_latency:.3f} seconds\n")
-                    f.write(f"- **Minimum:** {min_latency:.3f} seconds\n")
-                    f.write(f"- **Maximum:** {max_latency:.3f} seconds\n\n")
+            with open(filename, mode, encoding='utf-8') as f:
+                if not append_mode:
+                    # Write header (only when creating a new file)
+                    f.write(f"# Transcription Session: {self.session_name}\n\n")
+                    f.write(f"- **Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"- **Language:** {self.language}\n")
+                    f.write(f"- **Model:** {self.model}\n")
+                    f.write(f"- **Microphone:** {self.mic_device_name}\n")
+                    f.write(f"- **Translation:** {'Enabled' if self.translate else 'Disabled'}\n\n")
+                    
+                    # Write latency statistics
+                    if self.latency_measurements:
+                        avg_latency = sum(self.latency_measurements) / len(self.latency_measurements)
+                        min_latency = min(self.latency_measurements)
+                        max_latency = max(self.latency_measurements)
+                        f.write(f"## Latency Statistics\n\n")
+                        f.write(f"- **Average:** {avg_latency:.3f} seconds\n")
+                        f.write(f"- **Minimum:** {min_latency:.3f} seconds\n")
+                        f.write(f"- **Maximum:** {max_latency:.3f} seconds\n\n")
+                    
+                    # Start transcript section
+                    f.write("## Transcript\n\n")
+                else:
+                    # In append mode, add a timestamp marker
+                    f.write(f"\n--- Saved at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n\n")
                 
                 # Write transcript entries
-                f.write("## Transcript\n\n")
                 for entry in self.transcript_data:
-                    f.write(f"**[{entry['timestamp']}]** {entry['text']}\n\n")
+                    timestamp = f"**[{entry['timestamp']}]** " if hasattr(self.ui, 'show_timestamps') and self.ui.show_timestamps else ""
+                    f.write(f"{timestamp}{entry['text']}\n\n")
                     if "translation" in entry and entry["translation"]:
                         f.write(f"*Translation: {entry['translation']}*\n\n")
                         
             # Verify the file was saved
             if os.path.exists(filename):
                 logger.info(f"Transcript successfully saved to {filename}")
+                if self.ui and append_mode:
+                    self.ui.display_message(f"Transcript snapshot saved to {filename}")
             else:
                 logger.error(f"Failed to save transcript to {filename}")
                 
         except Exception as e:
             logger.error(f"Error saving transcript: {e}", exc_info=True)
+            
+    async def check_microphone(self):
+        """Check microphone levels before starting transcription"""
+        duration = 3
+        logger.info(f"Checking audio levels for {duration} seconds...")
+        if self.ui:
+            self.ui.display_message(f"Checking microphone levels (please speak now for {duration} seconds)...")
+            
+        p = pyaudio.PyAudio()
+        try:
+            stream = p.open(
+                format=pyaudio.paInt16,
+                channels=self.CHANNELS,
+                rate=self.RATE,
+                input=True,
+                input_device_index=self.mic_device_index,
+                frames_per_buffer=1024
+            )
+            
+            max_level = 0
+            for _ in range(int(duration * self.RATE / 1024)):
+                data = stream.read(1024, exception_on_overflow=False)
+                # Convert bytes to int16 array
+                audio_data = np.frombuffer(data, dtype=np.int16)
+                # Get max amplitude
+                level = np.max(np.abs(audio_data))
+                max_level = max(max_level, level)
+                await asyncio.sleep(0.001)
+                
+            # Get average level as percentage of max possible (32767)
+            percentage = (max_level / 32767) * 100
+            
+            result = {
+                "level": percentage,
+                "is_low": percentage < 1,
+                "message": ""
+            }
+            
+            if percentage < 1:
+                message = f"WARNING: Very low microphone levels ({percentage:.1f}%). Please speak louder or check microphone."
+                logger.warning(f"Very low audio level detected: {percentage:.1f}%")
+                if self.ui:
+                    self.ui.display_error(message)
+                result["message"] = message
+            else:
+                message = f"Microphone level: {percentage:.1f}%"
+                logger.info(f"Audio level detected: {percentage:.1f}%")
+                if self.ui:
+                    self.ui.display_message(message)
+                result["message"] = message
+            
+            return result
+                    
+        except Exception as e:
+            logger.error(f"Error checking audio levels: {e}")
+            if self.ui:
+                self.ui.display_error(f"Error checking audio levels: {e}")
+            return {"level": 0, "is_low": True, "message": f"Error: {str(e)}"}
+        finally:
+            if 'stream' in locals():
+                stream.stop_stream()
+                stream.close()
+            p.terminate()
+    

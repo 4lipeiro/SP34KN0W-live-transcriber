@@ -1,6 +1,6 @@
 # Configuration Guide
 
-This guide explains how to configure the SP34KN0W Live Transcriber to suit your needs through both command-line parameters and configuration files.
+This guide explains how to configure the SP34KN0W Live Transcriber v3.0 to suit your needs through both command-line parameters and configuration files.
 
 ## Command-Line Parameters
 
@@ -9,11 +9,13 @@ SP34KN0W offers a variety of command-line parameters for flexible configuration:
 | Parameter | Shorthand | Description | Default |
 |-----------|-----------|-------------|---------|
 | `--language` | `-l` | Language for transcription | `italian` |
-| `--translate` | `-t` | Enable translation to English | `False` |
+| `--translate` | `-t` | Enable translation to English with bilingual display | `False` |
 | `--session` | `-s` | Name for the transcription session | Timestamp |
 | `--mic` | `-m` | Microphone device name or index | System default |
 | `--debug` | `-d` | Enable debug logging | `False` |
 | `--verbose` | `-v` | Enable verbose transcript data output | `False` |
+| `--no-timestamp` | | Hide timestamps in display and saved files | `False` |
+| `--no-confirmation` | | Skip the initial confirmation prompt | `False` |
 | `--list-languages` | | List available languages | - |
 | `--list-mics` | | List available microphone devices | - |
 | `--list-sessions` | | List saved transcription sessions | - |
@@ -30,9 +32,24 @@ Specifying a different language:
 python main.py --language english
 ```
 
-Enabling translation:
+Enabling translation with bilingual display:
 ```bash
 python main.py --language french --translate
+```
+
+Hide timestamps in display and saved files:
+```bash
+python main.py --no-timestamp
+```
+
+Skip the initial confirmation prompt:
+```bash
+python main.py --no-confirmation
+```
+
+Combine multiple options:
+```bash
+python main.py --language spanish --translate --no-timestamp --no-confirmation
 ```
 
 Specifying a microphone by name:

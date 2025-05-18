@@ -1,6 +1,6 @@
 # Transcriber Component
 
-The Transcriber is the core component of the SP34KN0W Live Transcriber, responsible for capturing audio, processing it through the Deepgram API, and managing the transcription results.
+The Transcriber is the core component of the SP34KN0W Live Transcriber v3.0, responsible for capturing audio, processing it through the Deepgram API, managing the transcription results, and supporting control features like pause/resume functionality.
 
 ## File Location
 
@@ -16,6 +16,8 @@ The Transcriber is the core component of the SP34KN0W Live Transcriber, responsi
 - `pyaudio`: For audio capture
 - `numpy`: For audio data processing
 - `deepgram`: For speech-to-text API integration
+- `threading`: For handling keyboard events
+- `datetime`: For timestamp formatting
 
 ## Helper Functions
 
@@ -45,7 +47,7 @@ The primary class that handles all transcription functionality.
 ### Constructor
 
 ```python
-def __init__(self, api_key, language="it", ui=None, session_name=None, model="nova-2", translate=False, mic_device=None)
+def __init__(self, api_key, language="it", ui=None, session_name=None, model="nova-2", translate=False, mic_device=None, use_timestamps=True, no_confirmation=False)
 ```
 
 - **Parameters**:
@@ -56,6 +58,8 @@ def __init__(self, api_key, language="it", ui=None, session_name=None, model="no
   - `model` (str, optional): Deepgram model to use (default: "nova-2")
   - `translate` (bool, optional): Whether to translate results to English (default: False)
   - `mic_device` (int or str, optional): Microphone device index or name (default: None, uses system default)
+  - `use_timestamps` (bool, optional): Whether to display timestamps (default: True)
+  - `no_confirmation` (bool, optional): Whether to skip initial confirmation (default: False)
 
 ### Core Methods
 
@@ -68,7 +72,9 @@ Starts the transcription process.
 - **Behavior**: 
   - Initializes the Deepgram connection
   - Sets up event handlers
+  - Asks for user confirmation (unless disabled)
   - Configures and starts the microphone stream
+  - Sets up keyboard handlers for pause/resume
   - Begins processing audio
 
 #### `stop()`
@@ -81,7 +87,28 @@ Stops the transcription process.
   - Stops the audio stream
   - Closes the Deepgram connection
   - Reports latency statistics
-  - Saves the transcript to file
+  - Saves the complete transcript to file
+
+#### `pause()`
+
+Pauses the transcription process.
+
+- **Parameters**: None
+- **Returns**: None
+- **Behavior**:
+  - Pauses the audio stream
+  - Saves a snapshot of the current transcript
+  - Updates the UI to show pause state
+
+#### `resume()`
+
+Resumes the transcription process after a pause.
+
+- **Parameters**: None
+- **Returns**: None
+- **Behavior**:
+  - Restarts the audio stream
+  - Updates the UI to show active state
 
 #### `wait_for_completion()`
 
@@ -193,25 +220,50 @@ Reports final latency statistics for the session.
 - **Parameters**: None
 - **Returns**: None
 
-#### `_save_transcript()`
+#### `_save_transcript(is_snapshot=False)`
 
-Saves the complete transcript to a file.
+Saves the transcript to a file.
+
+- **Parameters**:
+  - `is_snapshot` (bool, optional): Whether this is a partial snapshot (default: False)
+- **Returns**: None
+- **Behavior**:
+  - For complete sessions:
+    - Creates a markdown file with session metadata
+    - Includes latency statistics and all snapshots
+    - Formats and writes all transcribed text
+  - For snapshots:
+    - Creates a timestamped markdown file
+    - Includes partial metadata and current timestamp
+    - Saves the current transcript up to this point
+
+#### `_save_session_snapshot()`
+
+Creates a timestamped snapshot of the current transcription session.
 
 - **Parameters**: None
 - **Returns**: None
 - **Behavior**:
-  - Creates a markdown file with session metadata
-  - Includes latency statistics
-  - Formats and writes all transcribed text
+  - Creates a timestamped snapshot file
+  - Records current progress and transcript
+  - Updates the main session file with snapshot reference
 
-## Usage Example
+## Session State Management
 
-```python
-# Initialize the transcriber
-transcriber = DeepgramTranscriber(
-    api_key="your_api_key",
-    language="en",
-    ui=terminal_ui,
+The Transcriber manages different session states:
+
+| State | Description |
+|-------|-------------|
+| INITIALIZING | Setting up connections and resources |
+| ACTIVE | Actively transcribing audio |
+| PAUSED | Transcription temporarily paused |
+| STOPPED | Transcription has ended |
+
+State transitions:
+- INITIALIZING → ACTIVE: When user confirms start
+- ACTIVE → PAUSED: When Ctrl+S is pressed
+- PAUSED → ACTIVE: When Ctrl+R is pressed
+- Any state → STOPPED: When Ctrl+C is pressed or an error occurs
     session_name="Meeting_2025_05_18",
     translate=True
 )

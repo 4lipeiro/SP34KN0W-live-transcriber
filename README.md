@@ -1,4 +1,4 @@
-# SP34KN0W Live Transcriber
+# SP34KN0W Live Transcriber v3.0
 
 ![SP34KN0W Logo](https://via.placeholder.com/150x150.png?text=SP34KN0W)
 
@@ -12,12 +12,13 @@ SP34KN0W is a powerful, command-line based live transcription tool that converts
 
 - **Live Transcription**: Convert speech to text in real-time with minimal latency
 - **Multiple Languages**: Support for various languages including Italian, English, French, Spanish, German, and more
-- **Translation**: Translate transcriptions to English on-the-fly
 - **Session Management**: Automatically save transcripts with detailed metadata
 - **Microphone Selection**: Choose from available audio input devices
 - **Low Latency**: Optimized for minimal delay between speech and transcription
-- **Terminal UI**: Clean, intuitive command-line interface with status indicators
-- **Latency Tracking**: Monitor and report transcription delay times
+- **Enhanced UI**: Professional ASCII banner, structured layout with dedicated areas, and dynamic status bar
+- **Control Features**: Pause/Resume functionality (Ctrl+S/Ctrl+R) with automatic session saving
+- **Customization Options**: Configure timestamp display and startup confirmation
+- **Latency Tracking**: Monitor and report transcription delay times with color-coded indicators
 
 ## 🚀 Quick Start
 
@@ -64,10 +65,28 @@ Specify a language:
 python main.py --language english
 ```
 
-Enable translation to English:
+Enable translation with bilingual display (under dev):
 
 ```bash
 python main.py --language italian --translate
+```
+
+Hide timestamps in display and saved transcripts:
+
+```bash
+python main.py --no-timestamp
+```
+
+Skip the initial confirmation prompt:
+
+```bash
+python main.py --no-confirmation
+```
+
+Combine multiple options:
+
+```bash
+python main.py --language french --translate --no-timestamp --no-confirmation
 ```
 
 List available languages:
@@ -105,40 +124,61 @@ python main.py --help
 ## 📊 Sample Output
 
 ```
-====================================================================
-                   SP34K-N0W TRANSCRIBER
-====================================================================
-Active language: English
-Microphone: External Microphone
-====================================================================
++-----------------------------------------------------------------------------------+
+|   _____ ____ _____ _  _   _  ___   _____      _                                  |
+|  / ____/ __ \__  /| |/ | / |/ / | / / _ \    | |                                 |
+| | |   | |__) |/ / |   /|   /| |/ // /_\ \   | |                                  |
+| | |   |  ___// /_ |  / |  / |   // _____ \  | |                                  |
+| | |___| |   /__/ || |  | |  | |\ \/_/   \_\ | |___                               |
+|  \____/_|  /____/ |_|  |_|  |_| \_\        |_____|                               |
+|                                                                                   |
++============================= LIVE TRANSCRIBER v3.0 ==============================+
+| Language: English  |  Microphone: External  |  Model: nova-2  |  Latency: ✅ 0.31s |
++-----------------------------------------------------------------------------------+
+| Session: Meeting-2025-05-18                                             [ACTIVE] |
++-----------------------------------------------------------------------------------+
 
-ℹ️ Starting transcription session: 2025-05-18_13-45-22
-ℹ️ Using nova-2 model for English
-ℹ️ Press Ctrl+C to end the session
+[00:03] This is a test of the SP34KN0W transcription system.
 
-ℹ️ Connected to Deepgram
-ℹ️ Checking microphone levels (please speak now for 3 seconds)...
-ℹ️ Microphone level: 42.5%
-ℹ️ Microphone active: External Microphone
+[00:06] The quick brown fox jumps over the lazy dog.
 
-🔄 [00:01] This is a test of the SP34KN0W transcription system.
-📝 [00:03] This is a test of the SP34KN0W transcription system.
++-----------------------------------------------------------------------------------+
+| 2025-05-18 14:12  |  SP34KN0W LIVE  |  Avg: 0.34s  |  Min: 0.15s  |  Max: 0.51s  |
++-----------------------------------------------------------------------------------+
+| [Ctrl+S]: Pause  |  [Ctrl+R]: Resume  |  [Ctrl+C]: End Session                   |
++-----------------------------------------------------------------------------------+
+```
 
-✅ Latency: 0.342s (Avg: 0.356s)
+### Bilingual Mode Example
+
+```
++-----------------------------------------------------------------------------------+
+| Session: Italian-Lecture-2025-05-18                                     [ACTIVE] |
++-----------------------------------------------------------------------------------+
+| ORIGINAL (ITALIAN)                   | TRANSLATION (ENGLISH)                     |
++--------------------------------------+------------------------------------------+
+| [00:03] Questo è un test del         | [00:03] This is a test of the SP34KN0W    |
+| sistema di trascrizione SP34KN0W.    | transcription system.                     |
+|                                      |                                           |
+| [00:06] La volpe marrone rapida      | [00:06] The quick brown fox jumps over    |
+| salta sul cane pigro.                | the lazy dog.                             |
++--------------------------------------+------------------------------------------+
 ```
 
 ## 📝 Session Storage
 
-Transcripts are saved as markdown files in the `sessions` directory, with timestamps and metadata:
+Transcripts are saved as markdown files in the `sessions` directory with detailed metadata:
 
 ```markdown
-# Transcription Session: 2025-05-18_13-45-22
+# Transcription Session: Meeting-2025-05-18
 
-- **Date:** 2025-05-18 13:58:33
+- **Date:** 2025-05-18 14:15:33
 - **Language:** en
 - **Model:** nova-2
 - **Microphone:** External Microphone
 - **Translation:** Disabled
+- **Duration:** 12 minutes 38 seconds
+- **Status:** Completed
 
 ## Latency Statistics
 
@@ -146,11 +186,27 @@ Transcripts are saved as markdown files in the `sessions` directory, with timest
 - **Minimum:** 0.156 seconds
 - **Maximum:** 0.897 seconds
 
+## Session Snapshots
+
+- **14:08:22** - Pause snapshot (4 min 12 sec)
+- **14:12:57** - Pause snapshot (8 min 47 sec)
+
 ## Transcript
 
 **[00:03]** This is a test of the SP34KN0W transcription system.
 
 **[00:06]** The quick brown fox jumps over the lazy dog.
+```
+
+### Session Snapshots
+
+When you pause a session (using Ctrl+S), SP34KN0W automatically saves the current transcript as a snapshot with a timestamp:
+
+```
+sessions/
+├── Meeting-2025-05-18.md                 # Complete session
+├── Meeting-2025-05-18_14-08-22.md        # First pause snapshot
+└── Meeting-2025-05-18_14-12-57.md        # Second pause snapshot
 ```
 
 ## 🔧 Advanced Configuration
