@@ -17,6 +17,60 @@ SP34KN0W is a powerful, command-line based live transcription tool that converts
 - **Terminal UI**: Clean, intuitive command-line interface with status indicators
 - **Latency Tracking**: Monitor and report transcription delay times
 
+---
+## 📝 Version History Note
+
+> **Important:** After v2.0, Linux and Windows versions were developed separately. The documentation referenced throughout this README (located in the `linux` folder) pertains specifically to the Linux version of SP34KN0W.
+
+
+## 🔄 Latest Versions
+
+| Platform | Version | Status |
+|----------|---------|--------|
+| Linux & Windows    | v2.0    | Stable |
+| Windows  | v2.6    | Beta   |
+
+
+## Updates v2.6 (windows-v2.6-beta)
+
+Here are the key features and improvements added in this version:
+
+### Display Mode Enhancements
+
+1. **New Side-by-Side Display Mode**
+   - Added two-column layout for transcript display
+   - Interim transcripts appear on the left side
+   - Final transcripts display on the right side
+   - Automatic text truncation to fit terminal width
+
+2. **Display Mode Selection**
+   - Side-by-side mode is now the default display option
+   - Added `--inline` command-line argument to use the traditional inline display instead
+   - Toggle between modes using the `set_display_mode()` method
+   - improved printing of the interim and final treanscript
+   
+3. **Improved Visual Formatting**
+   - Column separation with vertical line separator (│)
+   - Proper alignment of translations under final transcripts
+   - Better use of terminal space with dynamic column sizing
+
+4. **Transcript Visibility Improvements**
+   - Both interim and final transcripts remain visible on screen
+   - Clear visual distinction between interim (🔄) and final (📝) transcripts
+   - Translations (🌐) properly aligned with their source text
+
+### How to Use
+
+```
+# Use the new default side-by-side display mode
+python main.py
+
+# Use the traditional inline display mode
+python main.py --inline
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -153,33 +207,33 @@ Transcripts are saved as markdown files in the `sessions` directory, with timest
 
 ## 🔧 Advanced Configuration
 
-SP34KN0W can be configured through command line parameters or by editing the `config.py` file for permanent changes. See the [Configuration Guide](docs/configuration.md) for detailed information.
+SP34KN0W can be configured through command line parameters or by editing the `config.py` file for permanent changes. See the [Configuration Guide](linux/docsconfiguration.md) for detailed information.
 
 ## 📚 Comprehensive Documentation
 
-For detailed documentation of all aspects of SP34KN0W, see the [documentation directory](docs/).
+For detailed documentation of all aspects of SP34KN0W, see the [documentation directory](linux/docs).
 
-- [Project Overview](docs/overview.md): High-level overview of SP34KN0W
-- [Architecture](docs/architecture.md): System design and component interactions
-- [Installation Guide](docs/installation.md): Detailed installation instructions
-- [Configuration](docs/configuration.md): Configuration options and customization
-- [Core Components](docs/core-components/index.md): Detailed documentation of each system component
-  - [Transcriber](docs/core-components/transcriber.md): Audio capture and transcription
-  - [Terminal UI](docs/core-components/ui.md): User interface implementation
-  - [Utilities](docs/core-components/utils.md): Helper functions and tools
-  - [Translator](docs/core-components/translator.md): Translation capabilities
-- [API Integration](docs/api-integration.md): How SP34KN0W interfaces with Deepgram
-- [Development Guide](docs/development-guide.md): How to modify and extend SP34KN0W
-- [Troubleshooting](docs/troubleshooting.md): Solutions to common issues
-- [Contributing](docs/contributing.md): Guidelines for contributing to the project
+- [Project Overview](linux/docsoverview.md): High-level overview of SP34KN0W
+- [Architecture](linux/docsarchitecture.md): System design and component interactions
+- [Installation Guide](linux/docsinstallation.md): Detailed installation instructions
+- [Configuration](linux/docsconfiguration.md): Configuration options and customization
+- [Core Components](linux/docscore-components/index.md): Detailed documentation of each system component
+  - [Transcriber](linux/docscore-components/transcriber.md): Audio capture and transcription
+  - [Terminal UI](linux/docscore-components/ui.md): User interface implementation
+  - [Utilities](linux/docscore-components/utils.md): Helper functions and tools
+  - [Translator](linux/docscore-components/translator.md): Translation capabilities
+- [API Integration](linux/docsapi-integration.md): How SP34KN0W interfaces with Deepgram
+- [Development Guide](linux/docsdevelopment-guide.md): How to modify and extend SP34KN0W
+- [Troubleshooting](linux/docstroubleshooting.md): Solutions to common issues
+- [Contributing](linux/docscontributing.md): Guidelines for contributing to the project
 
 ## 🤝 Contributing
 
-Contributions are welcome! See the [Contributing Guidelines](docs/contributing.md) for details on how to get involved.
+Contributions are welcome! See the [Contributing Guidelines](linux/docscontributing.md) for details on how to get involved.
 
 ## 🧪 Development and Testing
 
-For information on setting up a development environment, testing procedures, and contributing to the project, see the [Development Guide](docs/development-guide.md) and [Contributing Guidelines](docs/contributing.md).
+For information on setting up a development environment, testing procedures, and contributing to the project, see the [Development Guide](linux/docsdevelopment-guide.md) and [Contributing Guidelines](linux/docscontributing.md).
 
 ## 🔬 Technical Details
 
@@ -220,7 +274,7 @@ SP34KN0W is ideal for:
 
 ## 🛠️ Troubleshooting
 
-For solutions to common issues, see the [Troubleshooting Guide](docs/troubleshooting.md).
+For solutions to common issues, see the [Troubleshooting Guide](linux/docstroubleshooting.md).
 
 ## 📄 License
 
@@ -235,7 +289,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For assistance, please:
 
-1. Check the [documentation](docs/)
+1. Check the [documentation](linux/docs)
 2. Look through [existing issues](https://github.com/yourusername/SP34KN0W-live-transcriber/issues)
 3. Create a new issue if needed
 

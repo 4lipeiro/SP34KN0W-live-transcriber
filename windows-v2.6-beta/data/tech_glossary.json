@@ -1,0 +1,42 @@
+{
+  "cybersecurity": {
+    "en": "Protection of computer systems and networks",
+    "it": "Protezione di sistemi informatici e reti"
+  },
+  "malware": {
+    "en": "Software designed to harm or exploit systems",
+    "it": "Software progettato per danneggiare o sfruttare i sistemi"
+  },
+  "phishing": {
+    "en": "Fraudulent attempt to obtain sensitive information",
+    "it": "Tentativo fraudolento di ottenere informazioni sensibili"
+  },
+  "firewall": {
+    "en": "Network security system that monitors traffic",
+    "it": "Sistema di sicurezza di rete che monitora il traffico"
+  },
+  "encryption": {
+    "en": "Process of encoding information",
+    "it": "Processo di codifica delle informazioni"
+  },
+  "vulnerability": {
+    "en": "Weakness that can be exploited",
+    "it": "Debolezza che può essere sfruttata"
+  },
+  "ransomware": {
+    "en": "Malware that encrypts data and demands payment",
+    "it": "Malware che cifra i dati e richiede un pagamento"
+  },
+  "penetration testing": {
+    "en": "Authorized simulated attack to evaluate security",
+    "it": "Attacco simulato autorizzato per valutare la sicurezza"
+  },
+  "zero-day": {
+    "en": "Previously unknown software vulnerability",
+    "it": "Vulnerabilità software precedentemente sconosciuta"
+  },
+  "backdoor": {
+    "en": "Method to bypass authentication",
+    "it": "Metodo per bypassare l'autenticazione"
+  }
+}

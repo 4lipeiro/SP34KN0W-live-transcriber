@@ -1,7 +1,8 @@
 # dev
 dev/
 api-docs/
-
+*/sessions/*
+*/logs/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
