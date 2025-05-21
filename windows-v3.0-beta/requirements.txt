@@ -1,0 +1,21 @@
+# Core dependencies
+deepgram-sdk>=4.1.0
+python-dotenv>=0.20.0
+pyaudio>=0.2.13
+numpy>=1.21.0
+keyboard>=0.13.5
+python-dotenv
+
+# Platform-specific dependencies
+windows-curses>=2.3.1; platform_system=="Windows"
+
+# Optional dependencies for development
+black>=23.1.0; python_version >= "3.7"  # Code formatting
+pytest>=7.0.0  # Testing
+
+# translation dependencies
+## PyTorch with CUDA 12.1 (adjust index-url as needed for your CUDA version)
+torch --index-url https://download.pytorch.org/whl/cu121
+## Hugging Face Transformers and SentencePiece
+transformers
+sentencepiece

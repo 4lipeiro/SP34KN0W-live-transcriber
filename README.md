@@ -23,19 +23,24 @@ SP34KN0W is a powerful, command-line based live transcription tool that converts
 > **Important:** After v2.0, Linux and Windows versions were developed separately. The documentation referenced throughout this README (located in the `linux` folder) pertains specifically to the Linux version of SP34KN0W.
 
 
-## 🔄 Latest Versions
+## 🔄 Versions
 
 | Platform | Version | Status |
 |----------|---------|--------|
 | Linux & Windows    | v2.0    | Stable |
-| Windows  | v2.6    | Beta   |
+| Windows  | v2.6    | Beta |
+| Windows  | v3.0    | Beta |
 
+## 📋 Updates & Releases
 
-## Updates v2.6 (windows-v2.6-beta)
+### Windows v2.6 (Beta)
+
+**Note:**  
+This is a specific version for Windows. If you are using Windows, this version is highly recommended compared to v2.0. However, Linux users should continue to use `v2.0-stable` for now.
 
 Here are the key features and improvements added in this version:
 
-### Display Mode Enhancements
+#### Display Mode Enhancements
 
 1. **New Side-by-Side Display Mode**
    - Added two-column layout for transcript display
@@ -47,7 +52,7 @@ Here are the key features and improvements added in this version:
    - Side-by-side mode is now the default display option
    - Added `--inline` command-line argument to use the traditional inline display instead
    - Toggle between modes using the `set_display_mode()` method
-   - improved printing of the interim and final treanscript
+   - Improved printing of the interim and final transcript
    
 3. **Improved Visual Formatting**
    - Column separation with vertical line separator (│)
@@ -59,15 +64,50 @@ Here are the key features and improvements added in this version:
    - Clear visual distinction between interim (🔄) and final (📝) transcripts
    - Translations (🌐) properly aligned with their source text
 
-### How to Use
+#### How to Use
 
-```
+```bash
 # Use the new default side-by-side display mode
 python main.py
 
 # Use the traditional inline display mode
 python main.py --inline
 ```
+
+### Windows v3.0 (Beta)
+
+**Note:**
+This version adds local translation capabilities specifically for Windows users with NVIDIA GPUs. It brings significant improvements to the translation system by moving from cloud-based to local GPU-powered translations. Please be aware that this version may not work as expected in all environments, but the English translation feature could be quite useful in multilingual settings.
+
+> ⚠️ **Warning:** Initial setup may take some time as it requires downloading translation models (~290MB). All translation is done locally on your GPU for better privacy.
+
+#### Key Features
+
+1. **Local Translation**
+   - Offline Italian→English translation using your GPU
+   - Uses Helsinki-NLP Opus model for fast, private translations
+   - NVIDIA RTX 30xx-series GPU support (requires CUDA 12.1)
+
+2. **New Bilingual Display Mode**
+   - Original text inline with the transcript
+   - Translated English text indented on the right
+   - Clear visual distinction between original (📝) and translation (🌐)
+
+3. **Enhanced CLI Options**
+   - Toggle translation via the `--translate` flag
+   - Select display mode preferences
+   - Seamless integration with existing commands
+
+4. **Dual-File Output**
+   - Combined bilingual markdown with original text and translations
+   - Separate English-only translation file (with `_en` suffix)
+   - Improved organization of transcription sessions
+
+> For detailed installation instructions and requirements, see the [Windows v3.0-beta README](windows-v3.0-beta/README.md)
+
+### Linux v2.0 (Stable)
+
+The stable version compatible with both Linux and Windows systems.
 
 ---
 
